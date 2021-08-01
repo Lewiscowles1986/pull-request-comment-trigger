@@ -3,6 +3,17 @@
 const core = require("@actions/core");
 const { context, GitHub } = require("@actions/github");
 
+function get_content_body(context) {
+    switch(context.eventName) {
+        case 'issue_comment':
+        case 'pull_request_review_comment':
+            return context.payload.comment.body;
+        case 'pull_request':
+            return context.payload.pull_request.body;
+    }
+    return null;
+}
+
 async function run() {
     const trigger = core.getInput("trigger", { required: true });
 
@@ -13,20 +24,8 @@ async function run() {
         return;
     }
 
-    const body =
-        context.eventName === "issue_comment"
-            ? context.payload.comment.body
-            : context.payload.pull_request.body;
+    const body = get_content_body(context);
     core.setOutput('comment_body', body);
-
-    if (
-        context.eventName === "issue_comment" &&
-        !context.payload.issue.pull_request
-    ) {
-        // not a pull-request comment, aborting
-        core.setOutput("triggered", "false");
-        return;
-    }
 
     const { owner, repo } = context.repo;
 
